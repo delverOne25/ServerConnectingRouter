@@ -7,8 +7,6 @@ package com.server;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 /**
  * Главная задача ServerRouter это определение порта NAT и его сообщение другому клиенту.
  * @author delverOne25

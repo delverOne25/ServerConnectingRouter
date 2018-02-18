@@ -10,20 +10,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.StringTokenizer;
-import server.ServerRouter;
+import com.server.ServerRouter;
+import java.io.PrintWriter;
 /**
  *
  * @author delverOne25
+ *  CLientConnectRouter.main(args)- основная точка входа в программу
+ *  // обработка параметров и запуск сервера
  */
-public class CLientConnectRouter {
+class CLientConnectRouter {
 
     /**
      * @param args the command line arguments
      * формат java ClientConnectRouter -p <port> -m <max-connections> -out <file-path> -err <file-path> 
      */
     public static void main(String[] args) {
-        int port=2400;
+        // default
+        int port=433;
         int maxConn=100;
         InputStream in= System.in;
         OutputStream out=System.out;
@@ -58,6 +61,7 @@ public class CLientConnectRouter {
         ServerRouter server=new ServerRouter(port, maxConn);
         try{
             server.serve(in, out, err);
+          
         }catch(IOException ex){
             err.print("Произошла ошибка при инициализации сервера\n");
             err.checkError();
