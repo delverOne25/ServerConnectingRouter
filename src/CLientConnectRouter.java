@@ -11,7 +11,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import com.server.ServerRouter;
-import java.io.PrintWriter;
+
 /**
  *
  * @author delverOne25
@@ -26,7 +26,7 @@ class CLientConnectRouter {
      */
     public static void main(String[] args) {
         // default
-        int port=433;
+        int port=2400;
         int maxConn=100;
         InputStream in= System.in;
         OutputStream out=System.out;
