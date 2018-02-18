@@ -3,19 +3,69 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package clientconnectrouter;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.util.StringTokenizer;
+import server.ServerRouter;
 /**
  *
- * @author danii
+ * @author delverOne25
  */
 public class CLientConnectRouter {
 
     /**
      * @param args the command line arguments
+     * формат java ClientConnectRouter -p <port> -m <max-connections> -out <file-path> -err <file-path> 
      */
     public static void main(String[] args) {
-        // TODO code application logic here
+        int port=2400;
+        int maxConn=100;
+        InputStream in= System.in;
+        OutputStream out=System.out;
+        PrintStream err=System.err;
+        
+        if(args.length>1){
+            try{
+                for(int i=0; i<args.length;i++){
+                    if(args[i].equals("-p") || args[i].equals("port")){
+                        port=Integer.parseInt(args[++i]);
+                    } else if(args[i].equals("-m") |args[i].equals("max"))
+                        port = Integer.parseInt(args[++i]);
+                    else if(args[i].equals("-out")){
+                         out  = new FileOutputStream(args[++i], true);
+                    } else if(args[i].equals("-err"))
+                        err=new PrintStream(args[++i]);
+                    else 
+                        throw new Exception("Формат.java ClientConnectRouter -p <port> "
+                                + "-m <max-connections> -out <file-path> -err <file-path>\n ");
+                }
+            }catch(NumberFormatException ex){
+                System.err.println("Проверти правильность введенных параметров, порт и max должны быть числами");
+                System.exit(1);
+            }catch(FileNotFoundException ex){
+                System.err.print("Вы не правильно передали путь к файлу для логирования.");
+                System.exit(1);
+            }catch(Exception ex){
+                System.err.println(ex.getMessage());
+                System.exit(1);
+            }
+        }
+        ServerRouter server=new ServerRouter(port, maxConn);
+        try{
+            server.serve(in, out, err);
+        }catch(IOException ex){
+            err.print("Произошла ошибка при инициализации сервера\n");
+            err.checkError();
+            err.flush();
+            server.closed();
+        }
+        
+        
     }
     
 }
