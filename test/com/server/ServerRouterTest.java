@@ -4,6 +4,7 @@
  *     просьбой сохранить свой контакт для дальнейшего подключения к ней
  *    Подключения клиента с просьбой подключиться к ранее оставившей контакт с
  *      портом и хостом. Этот клиент получает ее хост и порт nat
+ *      и создает сокет и отправляет сообщение этой машине та же читает и проводит тест.
  *    
  */
 package com.server;
@@ -17,6 +18,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
 import org.junit.After;
@@ -25,6 +27,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Ignore;
 
 /**
  * Основне методы имитации подключения
@@ -85,15 +88,22 @@ public class ServerRouterTest {
     }
     /**
      * Инициализируем подключение клиента с просьбой сохранения своего ключа и имени.
-     * Проверим соеденения удаленной машины с запросом registr и сохранением ее контакта в таблице контактов
+     * Проверим соеденения удаленной машины с запросом regist (на Сервере каталоге маршутов) r и сохранением ее контакта в таблице контактов
+     * Так же методом {@link listener(Socket client1)} начинаем прослушивать  ловальный порт, который получили после 
+     * обращения к серверу.
      */
-    @Test
+    @Test(timeout = 1000)
     public void connectedЬMashineTest() { 
 
         // Создаем клиентов и пытаемся подключиться к серверу
         try{
             Socket client1 =new Socket(server.getAddress().getAddress(),9999);
-            
+            // Запускаем в отдельнныйпоток в котором этот клиент узнав свой порт,
+            // который прослушивает nat, ждет подключения клиента и ответа от него
+            try{
+                listener(client1);
+            }catch(IOException ex1){System.err.println("Ошибка создания ServerSocket");}
+           
             //  а это значания порта и хоста на nat удаленной машины, которая отсылала запрос registr. 
             // Используются для проверки ответа пришедшего клиенту запросом connect
             hostTarget=client1.getLocalAddress().getHostAddress();
@@ -133,7 +143,40 @@ public class ServerRouterTest {
         }
        
     }
-   
+    /**
+     * Прослушивает подключения.
+     * <p>После подключения к серверу и получении своего локального порта, который занесен в таблицу nat, начинаем прослушивать
+     *  соеденения на этом порте, после подключения, читаем строчку, тест ограничен 1 секундой
+     * @param client1   это сокет соеденения с сервером каталогом, извлекаем из него локальнный адресс и порт
+     * @throws IOException  при срыве подключения
+     */
+   @Ignore
+   public void listener(Socket client1) throws IOException{
+        ServerSocket ss =new ServerSocket(client1.getLocalPort(),50,client1.getLocalAddress());    
+        Socket sock=null;
+        
+        new Thread( new Runnable() {
+                Socket sock;
+                public Runnable init(Socket sock){
+                    this.sock=sock;
+                    return this;
+                }
+                public void run() {
+                    // поток который будет отслеживать подключение 5 секунд             
+                 
+                    try{
+                       
+                        sock =ss.accept(); 
+                        assertEquals("Соединения не получилось ",
+                            (new BufferedReader(new InputStreamReader(sock.getInputStream()))).readLine(),
+                             "Ok");
+                        }catch(IOException ex){
+                            System.err.println("Время для прослушки соеденений закончилось ");
+                        }
+                  
+                }
+            }.init(sock)).start();
+   }
     
     /**
      * Проверяем подключения клиента к нашему серверу. Передачи запроса с информацией для подключения
@@ -159,11 +202,32 @@ public class ServerRouterTest {
                         + "для подключения",hostTarget,split[2]);
                 assertEquals("Exception: Порт не совпал с портом целевой удаленной машины  "
                         + "для подключения",portTarget+"",split[4]);
+                // пробуем подключиться к клиенту, который ждет соеденения на portTarget и hostTarget, которые пришли от сервера
+                connectingTarget(split[2],Integer.parseInt(split[4]));
 
             }
         }catch(IOException ex){
              System.err.print("!--------------------Server Eror-----------------------\n"+err.toString());
-        }
+        }   
+
+    } 
+    /**
+     * Пытаемся подключиться к удаленному клинту чей маршут нам сообщим сервер, после чего отправляем строчку запроса
+     * Удаленный клиент читает ее, и проводит тест {@code assertEquals()}
+     */
+    @Ignore
+    public void connectingTarget(String host, int port){
+                            
+            try{
+                 Socket socketClientRemote=new Socket(host,port);
+                 assertTrue("Подключение не установленно ", socketClientRemote.isConnected());
+                    /// отправляем запрос если подключились 
+                 PrintWriter pw1=new PrintWriter(socketClientRemote.getOutputStream());
+                     pw1.print("Ok\n");
+                     pw1.flush();
+            }catch(IOException exc){
+                System.err.println("Не удалось подключиться к удаленному клиенту на порт "+port);
+            }
     }
 
 
